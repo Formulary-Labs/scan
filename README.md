@@ -1,6 +1,6 @@
 # scan
 
-External threat intelligence and regulatory news scanner.
+The threat landscape changes on its own schedule. `scan` fetches from five source categories, scores each item against your program's framework and stack, and returns only what's relevant — everything else is noise.
 
 ```bash
 go get github.com/Formulary-Labs/scan
@@ -10,7 +10,7 @@ go get github.com/Formulary-Labs/scan
 
 `scan` fetches external threat intelligence and regulatory news from five source categories, scores each item for relevance against your program's framework, tech stack, and keywords, and returns a `ScanReport`. Items scoring below 0.1 are discarded. All external content is treated as untrusted — only `title`, `source`, `published_date`, `url`, and `summary` are extracted from source material.
 
-Every summary in the output is prefixed `[EXTERNAL SOURCE — UNVALIDATED]`. The prefix is not a style choice — it is a data handling boundary. `scan` extracts; it does not verify.
+Every summary in the output is prefixed `[EXTERNAL SOURCE — UNVALIDATED]`. That prefix is a data handling boundary, not a style choice. `scan` extracts; it does not verify.
 
 ## Usage
 
