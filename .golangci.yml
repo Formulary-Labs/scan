@@ -1,0 +1,83 @@
+# Formulary shared golangci-lint configuration.
+# Canonical source: formulary-github-org/golangci.yml
+# This file is copied verbatim into each tool repo and substrate.
+# Do not modify per-tool copies — change this file and redeploy.
+
+version: "2"
+
+linters:
+  enable:
+    # Correctness
+    - govet        # go vet — catches suspicious constructs
+    - errcheck     # check that errors are handled
+    - staticcheck  # comprehensive static analysis (SA*, S*, ST* checks)
+
+    # Security
+    - gosec        # G1xx-G6xx security patterns (secrets, SQL injection, weak crypto, etc.)
+
+    # Style and consistency
+    - revive       # comprehensive style linter; replaces golint
+    - misspell     # spelling in comments and string literals
+    - nolintlint   # //nolint directives must include a reason
+
+    # Dead code and imports
+    - unused       # exported and unexported unused code
+    - goimports    # import grouping and formatting
+
+    # Formatting
+    - gofmt        # standard Go formatting
+
+linters-settings:
+  revive:
+    rules:
+      # Require package-level doc comments on all exported symbols.
+      - name: exported
+        disabled: false
+      # Error return values must be the last return value.
+      - name: error-return
+        disabled: false
+      # Error types should be named with an "Error" suffix.
+      - name: error-naming
+        disabled: false
+      # Blank imports need a comment explaining why.
+      - name: import-alias-naming
+        disabled: false
+      # Do not use _ in package names.
+      - name: package-comments
+        disabled: false
+      # Unused parameters in functions.
+      - name: unused-parameter
+        disabled: false
+
+  gosec:
+    # Minimum severity: medium. Low-severity findings are noise for CLI tools.
+    severity: medium
+    confidence: medium
+    excludes:
+      # G304: file inclusion via variable — expected pattern for CLI tools that accept path flags.
+      - G304
+
+  errcheck:
+    # Check for errors on type assertions and closures.
+    check-type-assertions: true
+    check-blank: false
+
+  goimports:
+    # Group imports: stdlib first, then external, then internal.
+    local-prefixes: github.com/Formulary-Labs
+
+issues:
+  # Show all issues, not just the first occurrence per linter.
+  max-same-issues: 0
+
+  # Do not exclude common false positives — review them explicitly.
+  exclude-use-default: false
+
+  exclude-rules:
+    # Allow unhandled errors on fmt.Fprint* calls to stderr (if stderr is broken, exit is imminent).
+    - linters: [errcheck]
+      source: "fmt\\.Fprint"
+
+    # Allow //nolint:errcheck on encoder writes to stdout (matching the project convention).
+    - linters: [nolintlint]
+      text: "directive `//nolint:errcheck` is unused"
