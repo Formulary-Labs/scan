@@ -21,15 +21,15 @@ const version = "0.1.0"
 
 func main() {
 	var (
-		programFlag  = flag.String("program", "", "Program slug (required)")
-		configFlag   = flag.String("config", "", "Path to scan config JSON")
-		frameworkFlag = flag.String("framework", "", "Compliance framework slug (iso27001, iec62443, iso42001, etc.)")
+		programFlag    = flag.String("program", "", "Program slug (required)")
+		configFlag     = flag.String("config", "", "Path to scan config JSON")
+		frameworkFlag  = flag.String("framework", "", "Compliance framework slug (iso27001, iec62443, iso42001, etc.)")
 		categoriesFlag = flag.String("categories", "", "Comma-separated source categories: cisa,nvd,regulatory,aiml,custom")
-		lookbackFlag = flag.Int("lookback-days", 14, "Lookback window in days")
-		thresholdFlag = flag.Float64("threshold", 0.1, "Minimum relevance score [0-1]")
-		dryRunFlag   = flag.Bool("dry-run", false, "Print what would be fetched without making network requests")
-		fmtFlag      = flag.String("format", "json", "Output format: json (default), md")
-		versionFlag  = flag.Bool("version", false, "Print version and exit")
+		lookbackFlag   = flag.Int("lookback-days", 14, "Lookback window in days")
+		thresholdFlag  = flag.Float64("threshold", 0.1, "Minimum relevance score [0-1]")
+		dryRunFlag     = flag.Bool("dry-run", false, "Print what would be fetched without making network requests")
+		fmtFlag        = flag.String("format", "json", "Output format: json (default), md")
+		versionFlag    = flag.Bool("version", false, "Print version and exit")
 	)
 	flag.Usage = usage
 	flag.Parse()

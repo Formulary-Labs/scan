@@ -92,9 +92,9 @@ func TestParseCISAKEV(t *testing.T) {
 	defer srv.Close()
 
 	cfg := monitor.ScanConfig{
-		Program:   "test",
-		Framework: "iso27001",
-		Keywords:  []string{"ISO"},
+		Program:    "test",
+		Framework:  "iso27001",
+		Keywords:   []string{"ISO"},
 		Categories: []monitor.SourceCategory{monitor.CISACategory},
 		Sources: []monitor.CustomSource{
 			{Name: "CISA KEV", URL: srv.URL + "/kev.json", Category: monitor.CISACategory},

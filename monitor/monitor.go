@@ -11,14 +11,15 @@
 // No raw external HTML or full article text is included in output.
 //
 // Five source categories:
-//   1. CISA advisories and alerts
-//   2. NVD/CVE vulnerability feed
-//   3. Regulatory and standards bodies (NIST, ISO, ENISA)
-//   4. AI/ML safety and ethics research (arXiv, AI safety institutions)
-//   5. Custom RSS/Atom feeds (user-configured)
+//  1. CISA advisories and alerts
+//  2. NVD/CVE vulnerability feed
+//  3. Regulatory and standards bodies (NIST, ISO, ENISA)
+//  4. AI/ML safety and ethics research (arXiv, AI safety institutions)
+//  5. Custom RSS/Atom feeds (user-configured)
 package monitor
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -32,6 +33,7 @@ import (
 // SourceCategory is one of the 5 scan source categories.
 type SourceCategory string
 
+//nolint:revive // SourceCategory constants are self-documenting string identifiers.
 const (
 	CISACategory       SourceCategory = "cisa"
 	NVDCategory        SourceCategory = "nvd"
@@ -42,45 +44,45 @@ const (
 
 // ScanConfig configures a scan run.
 type ScanConfig struct {
-	Program     string          `json:"program"`
-	Framework   string          `json:"framework,omitempty"`
-	Stack       []string        `json:"stack,omitempty"`   // product names, tech stack
-	Keywords    []string        `json:"keywords,omitempty"` // extra relevance keywords
-	Categories  []SourceCategory `json:"categories,omitempty"` // empty = all
-	LookbackDays int            `json:"lookback_days,omitempty"`
-	Sources     []CustomSource  `json:"sources,omitempty"` // custom RSS/Atom sources
+	Program      string           `json:"program"`
+	Framework    string           `json:"framework,omitempty"`
+	Stack        []string         `json:"stack,omitempty"`      // product names, tech stack
+	Keywords     []string         `json:"keywords,omitempty"`   // extra relevance keywords
+	Categories   []SourceCategory `json:"categories,omitempty"` // empty = all
+	LookbackDays int              `json:"lookback_days,omitempty"`
+	Sources      []CustomSource   `json:"sources,omitempty"` // custom RSS/Atom sources
 }
 
 // CustomSource is a user-defined RSS/Atom feed URL.
 type CustomSource struct {
-	Name     string `json:"name"`
-	URL      string `json:"url"`
+	Name     string         `json:"name"`
+	URL      string         `json:"url"`
 	Category SourceCategory `json:"category"`
 }
 
 // Finding is a single scan result with relevance scoring.
 type Finding struct {
-	ID            string         `json:"id"`
-	Title         string         `json:"title"`
-	Source        string         `json:"source"`
-	Category      SourceCategory `json:"category"`
-	PublishedDate string         `json:"published_date"`
-	URL           string         `json:"url,omitempty"`
-	Summary       string         `json:"summary"`
-	RelevanceScore float64       `json:"relevance_score"` // 0.0 - 1.0
-	MatchedKeywords []string     `json:"matched_keywords,omitempty"`
-	RiskDelta     string         `json:"risk_delta,omitempty"` // "new", "updated", "seen"
+	ID              string         `json:"id"`
+	Title           string         `json:"title"`
+	Source          string         `json:"source"`
+	Category        SourceCategory `json:"category"`
+	PublishedDate   string         `json:"published_date"`
+	URL             string         `json:"url,omitempty"`
+	Summary         string         `json:"summary"`
+	RelevanceScore  float64        `json:"relevance_score"` // 0.0 - 1.0
+	MatchedKeywords []string       `json:"matched_keywords,omitempty"`
+	RiskDelta       string         `json:"risk_delta,omitempty"` // "new", "updated", "seen"
 }
 
 // ScanReport is the full output of a scan run.
 type ScanReport struct {
-	Program     string    `json:"program"`
-	ScannedAt   time.Time `json:"scanned_at"`
-	LookbackDays int      `json:"lookback_days"`
-	Categories  []SourceCategory `json:"categories"`
-	Findings    []Finding `json:"findings"`
-	Errors      []string  `json:"errors,omitempty"`
-	Warning     string    `json:"warning,omitempty"`
+	Program      string           `json:"program"`
+	ScannedAt    time.Time        `json:"scanned_at"`
+	LookbackDays int              `json:"lookback_days"`
+	Categories   []SourceCategory `json:"categories"`
+	Findings     []Finding        `json:"findings"`
+	Errors       []string         `json:"errors,omitempty"`
+	Warning      string           `json:"warning,omitempty"`
 }
 
 // DefaultSources returns the built-in source list for all categories.
@@ -96,13 +98,13 @@ func DefaultSources() []CustomSource {
 
 // FrameworkKeywords returns heuristic keywords for common frameworks.
 var FrameworkKeywords = map[string][]string{
-	"iso27001":  {"ISO 27001", "information security", "ISMS", "risk management", "access control"},
-	"iso42001":  {"ISO 42001", "AI management", "AIMS", "artificial intelligence", "AI governance"},
-	"iec62443":  {"IEC 62443", "OT security", "industrial control", "IACS", "cybersecurity"},
-	"hds":       {"health data", "HDS", "données de santé", "GDPR health", "medical data"},
-	"soc2":      {"SOC 2", "trust service", "availability", "confidentiality", "processing integrity"},
-	"fedramp":   {"FedRAMP", "FISMA", "federal cloud", "NIST 800-53"},
-	"nist-csf":  {"NIST CSF", "cybersecurity framework", "identify protect detect respond recover"},
+	"iso27001": {"ISO 27001", "information security", "ISMS", "risk management", "access control"},
+	"iso42001": {"ISO 42001", "AI management", "AIMS", "artificial intelligence", "AI governance"},
+	"iec62443": {"IEC 62443", "OT security", "industrial control", "IACS", "cybersecurity"},
+	"hds":      {"health data", "HDS", "données de santé", "GDPR health", "medical data"},
+	"soc2":     {"SOC 2", "trust service", "availability", "confidentiality", "processing integrity"},
+	"fedramp":  {"FedRAMP", "FISMA", "federal cloud", "NIST 800-53"},
+	"nist-csf": {"NIST CSF", "cybersecurity framework", "identify protect detect respond recover"},
 }
 
 // Run executes a scan against the configured sources.
@@ -217,7 +219,8 @@ type feedItem struct {
 }
 
 // fetchSource fetches items from a source using HTTP. Handles RSS/Atom XML
-// and CISA/NVD JSON formats.
+// and CISA/NVD JSON formats. NVD feeds are gzip-compressed and are
+// transparently decompressed before parsing.
 func fetchSource(src CustomSource, client *http.Client) ([]feedItem, error) {
 	resp, err := client.Get(src.URL)
 	if err != nil {
@@ -225,7 +228,18 @@ func fetchSource(src CustomSource, client *http.Client) ([]feedItem, error) {
 	}
 	defer resp.Body.Close() //nolint:errcheck
 
-	body, err := io.ReadAll(resp.Body)
+	bodyReader := io.Reader(resp.Body)
+	// NVD feeds are distributed as gzip-compressed JSON.
+	if src.Category == NVDCategory || strings.HasSuffix(src.URL, ".gz") {
+		gr, err := gzip.NewReader(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("creating gzip reader for %q: %w", src.URL, err)
+		}
+		defer gr.Close() //nolint:errcheck
+		bodyReader = gr
+	}
+
+	body, err := io.ReadAll(bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("reading body from %q: %w", src.URL, err)
 	}
@@ -233,6 +247,14 @@ func fetchSource(src CustomSource, client *http.Client) ([]feedItem, error) {
 	// Try CISA KEV JSON.
 	if src.Category == CISACategory {
 		items := parseCISAKEV(body)
+		if len(items) > 0 {
+			return items, nil
+		}
+	}
+
+	// Try NVD CVE JSON.
+	if src.Category == NVDCategory {
+		items := parseNVDCVE(body)
 		if len(items) > 0 {
 			return items, nil
 		}
@@ -312,7 +334,7 @@ func parseRSS(data []byte) ([]feedItem, error) {
 func parseCISAKEV(data []byte) []feedItem {
 	var doc struct {
 		Vulnerabilities []struct {
-			CveID            string `json:"cveID"`
+			CveID             string `json:"cveID"`
 			VulnerabilityName string `json:"vulnerabilityName"`
 			ShortDescription  string `json:"shortDescription"`
 			DateAdded         string `json:"dateAdded"`
@@ -328,6 +350,42 @@ func parseCISAKEV(data []byte) []feedItem {
 			Summary:   v.ShortDescription,
 			URL:       fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", v.CveID),
 			Published: v.DateAdded,
+		})
+	}
+	return items
+}
+
+// parseNVDCVE parses the NVD CVE JSON feed (1.1 format).
+func parseNVDCVE(data []byte) []feedItem {
+	var doc struct {
+		CVEItems []struct {
+			CVE struct {
+				CVEDataMeta struct {
+					ID string `json:"ID"`
+				} `json:"CVE_data_meta"`
+				Description struct {
+					DescriptionData []struct {
+						Value string `json:"value"`
+					} `json:"description_data"`
+				} `json:"description"`
+			} `json:"cve"`
+			PublishedDate string `json:"publishedDate"`
+		} `json:"CVE_Items"`
+	}
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil
+	}
+	var items []feedItem
+	for _, item := range doc.CVEItems {
+		desc := ""
+		if len(item.CVE.Description.DescriptionData) > 0 {
+			desc = item.CVE.Description.DescriptionData[0].Value
+		}
+		items = append(items, feedItem{
+			Title:     item.CVE.CVEDataMeta.ID,
+			Summary:   desc,
+			URL:       fmt.Sprintf("https://nvd.nist.gov/vuln/detail/%s", item.CVE.CVEDataMeta.ID),
+			Published: item.PublishedDate,
 		})
 	}
 	return items
