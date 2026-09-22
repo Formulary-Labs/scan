@@ -50,7 +50,7 @@ func TestScore_keywordMatch(t *testing.T) {
 </item>
 </channel>
 </rss>`
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/rss+xml")
 		w.Write([]byte(rss)) //nolint:errcheck
 	}))
@@ -85,7 +85,7 @@ func TestParseCISAKEV(t *testing.T) {
 			}
 		]
 	}`
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(cisaJSON)) //nolint:errcheck
 	}))
