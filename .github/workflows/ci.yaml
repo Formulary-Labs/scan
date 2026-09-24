@@ -19,7 +19,7 @@ jobs:
       - name: Build
         run: go build ./...
       - name: Lint
-        uses: golangci/golangci-lint-action@v7
+        uses: golangci/golangci-lint-action@v9
         with:
           version: v2.13.2
       - name: Security scan
