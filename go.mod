@@ -1,6 +1,6 @@
 module github.com/Formulary-Labs/scan
 
-go 1.25.0
+go 1.26.6
 
 require github.com/Formulary-Labs/substrate v0.4.0
 
