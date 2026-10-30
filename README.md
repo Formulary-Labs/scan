@@ -6,13 +6,46 @@ The threat landscape changes on its own schedule. `scan` fetches from five sourc
 go get github.com/Formulary-Labs/scan
 ```
 
+## In the ecosystem
+
+Formulary is a **pick-and-choose** suite of small, single-purpose CLIs. Install only the tools your workflow needs; each runs standalone. Shared contracts live in [`substrate`](https://github.com/Formulary-Labs/substrate). Optional Make pipelines (or an agent such as `regimen`) compose tools into a run — plug-and-play, not all-or-nothing.
+
+**This tool:** external threat/regulatory intel scored against your program.  
+**Works with:** `specimen` (risk feed), pipeline iso42001 step 3.  
+**Pipeline stage:** monitor.
+
+
 ## What it does
 
 `scan` fetches external threat intelligence and regulatory news from five source categories, scores each item for relevance against your program's framework, tech stack, and keywords, and returns a `ScanReport`. Items scoring below 0.1 are discarded. All external content is treated as untrusted — only `title`, `source`, `published_date`, `url`, and `summary` are extracted from source material.
 
 Every summary in the output is prefixed `[EXTERNAL SOURCE — UNVALIDATED]`. That prefix is a data handling boundary, not a style choice. `scan` extracts; it does not verify.
 
-## Usage
+## CLI
+
+```bash
+scan --program my-program --framework iso42001 \
+  --categories cisa,nvd,regulatory --lookback-days 14
+
+# Dry run — print what would be fetched without network requests
+scan --program my-program --framework iso42001 --dry-run
+
+# Custom scan configuration
+scan --program my-program --config scan-config.json
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--program` | — | Program slug (required) |
+| `--framework` | — | Compliance framework slug (iso27001, iec62443, iso42001, …) |
+| `--categories` | all | Comma-separated: `cisa,nvd,regulatory,aiml,custom` |
+| `--config` | — | Path to scan config JSON |
+| `--lookback-days` | `14` | Lookback window |
+| `--threshold` | `0.1` | Minimum relevance score [0–1] |
+| `--dry-run` | `false` | Print what would be fetched without network requests |
+| `--format` | `json` | `json` or `md` |
+
+## Library usage
 
 ```go
 import "github.com/Formulary-Labs/scan/monitor"
